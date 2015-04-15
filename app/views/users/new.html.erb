@@ -1,0 +1,24 @@
+<h3>New User Sign Up</h3>
+
+<%= form_for User.new do |f| %>
+
+    <div class="form-group">
+      <%= f.label :name %>
+      <%= f.text_field :name %>
+    </div>
+    <div class="form-group">
+      <%= f.label :email %>
+      <%= f.text_field :email %>
+    </div>
+    <div class="form-group">
+      <%= f.label :password_digest%>
+      <%= f.password_field :password_digest %>
+    </div>
+
+    <div class="form-group">
+      <%= recaptcha_tags %>
+    </div>
+    <div class="form-group">
+      <%= f.submit "Sign Up" %>
+    </div>
+<% end %>

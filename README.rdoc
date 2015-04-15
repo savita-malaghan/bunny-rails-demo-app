@@ -1,0 +1,89 @@
+Bunny, a Ruby RabbitMQ Client
+Bunny is a RabbitMQ client that focuses on ease of use. It is feature complete, supports all recent RabbitMQ features and does not have any heavyweight dependencies.
+
+I Know What RabbitMQ and Bunny are, How Do I Get Started?
+
+Right here!
+
+What is Bunny Good For?
+
+One can use Bunny to make Ruby applications interoperate with other applications (both built in Ruby and not). Complexity and size may vary from simple work queues to complex multi-stage data processing workflows that involve many applications built with all kinds of technologies.
+
+
+You can use Rubygems to install Bunny
+gem install bunny
+Adding Bunny as a dependency with Bundler
+source "https://rubygems.org"
+
+gem "bunny", ">= 1.7.0"
+
+Verifying your installation
+
+Verify your installation with a quick irb session:
+irb -rubygems
+:001 > require "bunny"
+=> true
+:002 > Bunny::VERSION
+=> "1.7.0"
+"Hello, world" example
+Let us begin with the classic "Hello, world" example. First, here is the code:
+
+#!/usr/bin/env ruby
+# encoding: utf-8
+
+require "rubygems"
+require "bunny"
+
+conn = Bunny.new
+conn.start
+
+ch = conn.create_channel
+q  = ch.queue("bunny.examples.hello_world", :auto_delete => true)
+x  = ch.default_exchange
+
+q.subscribe do |delivery_info, metadata, payload|
+  puts "Received #{payload}"
+end
+
+x.publish("Hello!", :routing_key => q.name)
+
+sleep 1.0
+conn.close
+This example demonstrates a very common communication scenario: application A wants to publish a message that will end up in a queue that application B listens on. In this case, the queue name is "bunny.examples.hello_world". Let us go through the code step by step:
+
+require "rubygems"
+require "bunny"
+is the simplest way to load Bunny if you have installed it with RubyGems, but remember that you can omit the rubygems line if your environment does not need it. The following piece of code
+
+conn = Bunny.new
+conn.start
+connects to RabbitMQ running on localhost, with the default port (5672), username ("guest"), password ("guest") and virtual host ("/").
+
+The next line
+
+ch = conn.create_channel
+opens a new channel. AMQP 0.9.1 is a multi-channeled protocol that uses channels to multiplex a TCP connection.
+
+Channels are opened on a connection. Bunny::Session#create_channel will return only when Bunny receives a confirmation that the channel is open from RabbitMQ.
+
+This line
+
+q  = ch.queue("bunny.examples.hello_world", :auto_delete => true)
+declares a queue on the channel that we have just opened. Consumer applications get messages from queues. We declared this queue with the "auto-delete" parameter. Basically, this means that the queue will be deleted when there are no more processes consuming messages from it.
+
+The next line
+
+x  = ch.default_exchange
+instantiates an exchange. Exchanges receive messages that are sent by producers. Exchanges route messages to queues according to rules called bindings. In this particular example, there are no explicitly defined bindings. The exchange that we use is known as the default exchange and it has implied bindings to all queues. Before we get into that, let us see how we define a handler for incoming messages
+
+q.subscribe do |delivery_info, metadata, payload|
+  puts "Received #{payload}"
+end
+Bunny::Queue#subscribe takes a block that will be called every time a message arrives. This will happen in a thread pool, so Bunny::Queue#subscribe does not block the thread that invokes it.
+
+Finally, we publish our message
+
+x.publish("Hello!", :routing_key => q.name)
+Routing key is one of the message properties. The default exchange will route the message to a queue that has the same name as the message's routing key. This is how our message ends up in the "bunny.examples.hello_world" queue.
+
+
